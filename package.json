@@ -4,9 +4,7 @@
   "private": true,
   "scripts": {
     "start": "nodemon ./bin/www",
-    "build" : "npm install --prefix blogwebfrontend && npm run build --prefix blogwebfrontend",
     "deployStart": "node ./bin/www"
-
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

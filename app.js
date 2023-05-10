@@ -40,6 +40,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 
+
 /*Check for Auth  */
 app.get('/checkAuth',auth,async (req,res) => {
   const user = await User_Reg.findOne({_id: req.userId}).select({_id: 0,tokens: 0,password: 0});  
@@ -415,17 +416,6 @@ app.get('/moveBlog',auth,async (req,res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 /* Logout Function*/
 app.get('/logout',auth, async (req,res) => {
   const user = await User_Reg.findOne(({_id: req.userId})).select({tokens: 1});
@@ -439,7 +429,8 @@ app.get('/logout',auth, async (req,res) => {
 });
 
 app.get('/*',(req,res) => {
-  res.sendFile(path.join(__dirname, "Client/build", "index.html"));
+  /*res.sendFile(path.join(__dirname,"Client",build, "index.html"));*/
+  //console.log(__dirname);
 });
 
 // catch 404 and forward to error handler

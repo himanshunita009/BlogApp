@@ -94,7 +94,7 @@ const Approved_Blogs_Schema = mongoose.Schema({
     subject: {
         type: String,
         required: true,
-        minlength: 50
+        minlength: 10
     },
     contents:[]
     ,

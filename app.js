@@ -451,7 +451,7 @@ app.get('/logout',auth, async (req,res) => {
 });
 
 app.get('/*',(req,res) => {
-  /*res.sendFile(path.join(__dirname,"Client",build, "index.html"));*/
+  res.sendFile(path.join(__dirname,"public", "index.html"));
   //console.log(__dirname);
 });
 

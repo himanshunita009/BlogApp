@@ -452,7 +452,11 @@ app.get('/logout',auth, async (req,res) => {
 
 app.get('/*',(req,res) => {
   res.sendFile(path.join(__dirname,"public", "index.html"));
+<<<<<<< HEAD
   console.log(__dirname);
+=======
+  //console.log(__dirname);
+>>>>>>> 39d02ee39c249612075873d3f78f321c96ee9607
 });
 
 // catch 404 and forward to error handler

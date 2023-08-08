@@ -5,21 +5,20 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const cors = require('cors');
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
 
 /*My Own Require Module */
 require("./Database/databseInitilization");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const {auth} = require('./authenticationCheck');
-const request = require('request');
 const adminEmail = 'himanshucse.stud@nita.ac.in';
-const ObjectId = require('mongodb');
 /*End -------------- */
 
 
+
 var app = express();
+
+app.use(cors({origin: 'http://localhost:3000'}));
+
 
 // if(process.env.NODE_ENV === "deployment"){
 //   app.use(express.static('blogwebfrontend'));
@@ -136,10 +135,14 @@ app.post('/addBlogsData',auth,async (req,res) => {
   docs.save().then((result) => {
     user.docs.push(result._id);
     user.contribution.pending = user.contribution.pending+1; 
-    user.save().then(()=> {
-      res.json({
-        status: "True"
-      });
+    user.save().then(async ()=> {
+      const admin = await User_Reg.findOne({email: adminEmail}).select({contribution: 1});
+      admin.contribution.pending = admin.contribution.pending +1;
+      admin.save().then(() => {
+        res.json({
+          status: "True"
+        });
+      });      
     }).catch((err) => {
       res.json(err);
     });
@@ -319,7 +322,7 @@ app.get('/moveBlog',auth,async (req,res) => {
       sourceBlogCategory = Blog_Rejected;
       break;
   }
-  
+  const admin = await User_Reg.findOne({email: adminEmail}).select({contribution: 1});  
   if(reqType === '1' || reqType === '2'){
     if(applicant.email === adminEmail){
       sourceBlogCategory.findOne({_id: docId}).select({reason: 0}).then(async (data) => {
@@ -331,19 +334,25 @@ app.get('/moveBlog',auth,async (req,res) => {
             contents: data.contents,
             authorDetails: data.authorDetails
           });
-          await approvedDoc.save();
-          const user = await User_Reg.findOne({email: data.authorDetails.email}).select({contribution: 1});
-          if(listNo === '2'){
-            user.contribution.pending = user.contribution.pending-1;
-          }else if(listNo === '3'){
-            user.contribution.rejected = user.contribution.rejected-1;
-          }
-          user.contribution.approved = user.contribution.approved+1;
+          approvedDoc.save().then(async() => {
+            const user = await User_Reg.findOne({email: data.authorDetails.email}).select({contribution: 1});
+            if(listNo === '2'){
+              user.contribution.pending = user.contribution.pending-1;
+              admin.contribution.pending = admin.contribution.pending-1;
+            }else if(listNo === '3'){
+              user.contribution.rejected = user.contribution.rejected-1;
+              admin.contribution.rejected = admin.contribution.rejected-1;
+            }
+            user.contribution.approved = user.contribution.approved+1;
+            admin.contribution.approved = admin.contribution.approved+1;
           await user.save();
+          await admin.save();
           res.status(200).json({
             status: true,
             msg: "approved"
           });
+          })
+          
         }else {
           const rejectDoc = new Blog_Rejected({
             _id: data._id,
@@ -357,15 +366,22 @@ app.get('/moveBlog',auth,async (req,res) => {
           const user = await User_Reg.findOne({email: data.authorDetails.email}).select({contribution: 1});
           if(listNo === '2'){
             user.contribution.pending = user.contribution.pending-1;
+            admin.contribution.pending = admin.contribution.pending-1;
           }else if(listNo === '1'){
             user.contribution.approved = user.contribution.approved-1;
+            admin.contribution.approved = admin.contribution.approved-1;
           }
           user.contribution.rejected = user.contribution.rejected+1;
-          await user.save();
-          res.status(200).json({
-            status: true,
-            msg: "deleted"
+          admin.contribution.rejected = admin.contribution.rejected+1;
+          user.save().then(() => {
+            admin.save().then(() => {
+              res.status(200).json({
+                status: true,
+                msg: "rejected"
+              });
+            });
           });
+          
         }
       }).catch(() => {
         res.status(200).json({
@@ -389,21 +405,27 @@ app.get('/moveBlog',auth,async (req,res) => {
       switch(listNo){
         case '1':
           user.contribution.approved = user.contribution.approved-1; 
+          admin.contribution.approved = admin.contribution.approved-1; 
           break;
         case '2':
           user.contribution.pending = user.contribution.pending-1;
+          admin.contribution.pending = admin.contribution.pending-1;
           break;
         case '3':
           user.contribution.rejected = user.contribution.rejected-1;
+          admin.contribution.rejected = admin.contribution.rejected-1;
           break;
       }
       sourceBlogCategory.deleteOne({_id: docId}).then(async () => {
         user.docs = docs;
         await user.save();
-        res.status(200).json({
-          status: true,
-          msg: "document deleted"
+        await admin.save().then(() => {
+          res.status(200).json({
+            status: true,
+            msg: "document deleted"
+          });
         });
+        
       });
     }else {
       res.status(200).json({
